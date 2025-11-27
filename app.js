@@ -9,6 +9,8 @@ class FlowgazerApp {
     this.isAutoUpdate = true;
     this.filterAuthors = null;
     this.flowgazerOnly = false;
+    this.myPostsHistoryFetched = false;
+    this.receivedLikesFetched = false;
   }
 
   /**
@@ -63,6 +65,7 @@ class FlowgazerApp {
    */
   subscribeMainTimeline() {
     const filters = [];
+    const myPubkey = window.nostrAuth?.pubkey;
 
     // グローバルタイムライン
     if (this.currentTab === 'global') {
@@ -83,15 +86,8 @@ class FlowgazerApp {
     }
 
     // マイポストタイムライン
-    if (this.currentTab === 'myposts' && window.nostrAuth.isLoggedIn()) {
-      const myPubkey = window.nostrAuth.pubkey;
-      filters.push({
-        kinds: [1],
-        authors: [myPubkey],
-        limit: 100
-      });
-
-      // リアクションも取得
+    if (this.currentTab === 'myposts' && myPubkey) {
+      // リアクション取得のみ（投稿は履歴で取得済み）
       if (window.dataStore.myPostIds.size > 0) {
         filters.push({
           kinds: [6, 7],
@@ -101,9 +97,11 @@ class FlowgazerApp {
     }
 
     // 購読
-    window.relayManager.subscribe('main-timeline', filters, (type, event) => {
-      this.handleTimelineEvent(type, event);
-    });
+    if (filters.length > 0) {
+      window.relayManager.subscribe('main-timeline', filters, (type, event) => {
+        this.handleTimelineEvent(type, event);
+      });
+    }
   }
 
   /**
@@ -167,30 +165,7 @@ class FlowgazerApp {
       }
     });
 
-    // 2. 自分の投稿履歴
-    window.relayManager.subscribe('my-posts', {
-      kinds: [1],
-      authors: [myPubkey],
-      limit: 100
-    }, (type, event) => {
-      if (type === 'EVENT') {
-        window.dataStore.addEvent(event);
-      }
-    });
-
-    // 3. 受け取ったふぁぼ
-    window.relayManager.subscribe('received-likes', {
-      kinds: [7],
-      '#p': [myPubkey],
-      limit: 50
-    }, (type, event) => {
-      if (type === 'EVENT') {
-        window.dataStore.addEvent(event);
-        window.profileFetcher.request(event.pubkey);
-      }
-    });
-
-    // 4. 自分がふぁぼした履歴
+    // 2. 自分がふぁぼした履歴（これだけはグローバルに影響しないので先に取得）
     window.relayManager.subscribe('my-likes', {
       kinds: [7],
       authors: [myPubkey]
@@ -199,6 +174,55 @@ class FlowgazerApp {
         window.dataStore.addEvent(event);
       }
     });
+
+    // 注: 自分の投稿履歴と受け取ったふぁぼは、
+    // 該当タブを開いた時に取得する
+  }
+
+  /**
+   * 自分の投稿履歴を取得（「自分」タブ用）
+   */
+  fetchMyPostsHistory() {
+    if (this.myPostsHistoryFetched) return;
+    
+    const myPubkey = window.nostrAuth.pubkey;
+    
+    // 自分の投稿履歴
+    window.relayManager.subscribe('my-posts-history', {
+      kinds: [1],
+      authors: [myPubkey],
+      limit: 100
+    }, (type, event) => {
+      if (type === 'EVENT') {
+        window.dataStore.addEvent(event);
+        window.timeline.refresh();
+      }
+    });
+
+    this.myPostsHistoryFetched = true;
+  }
+
+  /**
+   * 受け取ったふぁぼを取得（「ふぁぼられ」タブ用）
+   */
+  fetchReceivedLikes() {
+    if (this.receivedLikesFetched) return;
+    
+    const myPubkey = window.nostrAuth.pubkey;
+    
+    window.relayManager.subscribe('received-likes', {
+      kinds: [7],
+      '#p': [myPubkey],
+      limit: 100
+    }, (type, event) => {
+      if (type === 'EVENT') {
+        window.dataStore.addEvent(event);
+        window.profileFetcher.request(event.pubkey);
+        window.timeline.refresh();
+      }
+    });
+
+    this.receivedLikesFetched = true;
   }
 
   /**
@@ -212,6 +236,13 @@ class FlowgazerApp {
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.classList.toggle('active', btn.id === `tab-${tab}`);
     });
+
+    // タブ専用データの取得
+    if (tab === 'myposts' && window.nostrAuth.isLoggedIn()) {
+      this.fetchMyPostsHistory();
+    } else if (tab === 'likes' && window.nostrAuth.isLoggedIn()) {
+      this.fetchReceivedLikes();
+    }
 
     // 購読を更新
     window.relayManager.unsubscribe('main-timeline');
@@ -294,6 +325,7 @@ class FlowgazerApp {
       window.dataStore.addEvent(signed);
       window.timeline.refresh();
 
+      alert('投稿しました！');
       document.getElementById('new-post-content').value = '';
 
     } catch (err) {
@@ -303,7 +335,7 @@ class FlowgazerApp {
   }
 
   /**
-   * ふぁぼする
+   * ふぁぼる
    */
   async sendLike(targetEventId, targetPubkey) {
     if (!window.nostrAuth.canWrite()) {
