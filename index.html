@@ -44,7 +44,7 @@ li.event { padding: 0.5rem; border-top: 1px dashed #ddd;}
  <button onclick="showAuthUI()" style="color: #00796b; background-color: #e0f2f1; padding: 0.25rem 1rem;">すでに鍵をお持ちの方</button>
 </div>
 
-<p>タイムラインを見たり、投稿したり、ふぁぼったりできるよ。</p>
+<p>新設計版。タイムラインを見たり、投稿したり、ふぁぼったりできるよ。</p>
 
 <button id="generate-trial-keypair" class="full-width" onclick="generateAndLoginWithNewKeypair()">
   新しい鍵ペアを生成して試す！
@@ -107,8 +107,8 @@ li.event { padding: 0.5rem; border-top: 1px dashed #ddd;}
 <script src="https://ompomz.github.io/header/loadHeader.js"></script>
 <script src="https://ompomz.github.io/modal.js"></script>
 <script src="https://ompomz.github.io/flowgazer/tutorial.js"></script>
-<script src="https://ompomz.github.io/flowgazer2/auth.js"></script>
-<script src="https://ompomz.github.io/flowgazer2/auth-ui.js"></script>
+<script src="./auth.js"></script>
+<script src="./auth-ui.js"></script>
 <script src="https://unpkg.com/nostr-tools@2.17.0/lib/nostr.bundle.js"></script>
 
 <!-- 新設計JS -->
@@ -119,8 +119,23 @@ li.event { padding: 0.5rem; border-top: 1px dashed #ddd;}
 <script src="./app.js"></script>
 
 <script>
+// 初期化確認
+console.log('✅ スクリプト読み込み完了');
+console.log('dataStore:', typeof window.dataStore);
+console.log('relayManager:', typeof window.relayManager);
+console.log('profileFetcher:', typeof window.profileFetcher);
+console.log('Timeline:', typeof window.Timeline);
+console.log('app:', typeof window.app);
+
 // DOMContentLoaded
 document.addEventListener('DOMContentLoaded', async () => {
+  // インスタンスの存在確認
+  if (!window.dataStore) {
+    console.error('❌ dataStoreが初期化されていません');
+    alert('初期化エラー: ページを再読み込みしてください');
+    return;
+  }
+  
   // タイムラインインスタンス作成
   window.timeline = new Timeline(document.getElementById('timeline'));
   
@@ -192,7 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // フォローリスト読み込み
   document.getElementById('load-follows').addEventListener('click', () => {
     if (!window.nostrAuth.isLoggedIn()) {
-      alert('鍵の入力が必要です');
+      alert('ログインが必要です');
       showAuthUI();
       return;
     }
@@ -260,5 +275,6 @@ function generateAndLoginWithNewKeypair() {
   location.reload();
 }
 </script>
+
 </body>
 </html>
