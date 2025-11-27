@@ -24,7 +24,7 @@ class FlowgazerApp {
 
     // デフォルトリレーに接続
     const savedRelay = localStorage.getItem('relayUrl');
-    const defaultRelay = 'wss://nos.lol/';
+    const defaultRelay = 'wss://r.ompomz.io';
     const relay = savedRelay || defaultRelay;
 
     await this.connectRelay(relay);
@@ -176,7 +176,7 @@ class FlowgazerApp {
     });
 
     // 注: 自分の投稿履歴と受け取ったふぁぼは、
-    // 該当タブを開いた時に取得する
+    // 該当タブを開いた時に取得する（後述）
   }
 
   /**
@@ -276,15 +276,24 @@ class FlowgazerApp {
    * もっと見る
    */
   loadMore() {
+    const oldestTimestamp = window.dataStore.getOldestTimestamp(this.currentTab);
+    
     const filter = {
       kinds: [1, 6],
-      until: window.dataStore.oldestTimestamp - 1,
+      until: oldestTimestamp - 1,
       limit: 50
     };
 
+    // フィルターや著者の設定
     if (this.filterAuthors && this.filterAuthors.length > 0) {
       filter.authors = this.filterAuthors;
+    } else if (this.currentTab === 'following' && window.dataStore.followingPubkeys.size > 0) {
+      filter.authors = Array.from(window.dataStore.followingPubkeys);
+    } else if (this.currentTab === 'myposts' && window.nostrAuth.isLoggedIn()) {
+      filter.authors = [window.nostrAuth.pubkey];
     }
+
+    console.log(`📥 もっと見る: ${this.currentTab}タブ, until=${new Date(oldestTimestamp * 1000).toLocaleString()}`);
 
     window.relayManager.subscribe('load-more', filter, (type, event) => {
       if (type === 'EVENT') {
@@ -294,6 +303,7 @@ class FlowgazerApp {
       } else if (type === 'EOSE') {
         window.relayManager.unsubscribe('load-more');
         document.getElementById('load-more').classList.remove('loading');
+        console.log(`✅ もっと見る完了`);
       }
     });
   }
@@ -335,7 +345,7 @@ class FlowgazerApp {
   }
 
   /**
-   * ふぁぼる
+   * ふぁぼする
    */
   async sendLike(targetEventId, targetPubkey) {
     if (!window.nostrAuth.canWrite()) {
