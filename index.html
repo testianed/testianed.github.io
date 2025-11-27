@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>flowgazer</title>
+<link rel="icon" type="image/x-icon" href="https://ompomz.github.io/flowgazer/favicon.ico">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box;}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; padding: 0.5rem; line-height: 1.3; background-color: #f7f7f7; color: #666; font-size: 0.9rem;}
+.container { max-width: 600px; margin-left: 0.5rem; margin-right: auto; padding: 0.5rem;}
+h1 { font-size: 1.2rem; margin-bottom: 0.5rem;}
+input, textarea { font-size: 0.9rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; color: #666; background-color: #fff;}
+textarea { resize: vertical;}
+.container button { font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; color: #fff; background-color: #666; cursor: pointer;}
+.full-width { width: 100%;}
+.flex-container { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;}
+.flex-container input { flex-grow: 1; margin: 0;}
+.flex-container button { margin: 0;}
+ul { list-style: none; padding: 0; margin: 0.5rem 0;}
+li.event { padding: 0.5rem; border-top: 1px dashed #ddd;}
+.event-liked { border-right: 0.3rem solid #ffd700;}
+.npub-link { color: #66b3ff;}
+.nostr-ref, .pubkey-ref { color: #66b3ff; text-decoration: none;}
+.custom-emoji { height: 1.2rem; vertical-align: bottom;}
+.tab-button { padding: 0.5rem 1rem; border: none; background: #ddd; cursor: pointer; border-radius: 4px;}
+.tab-button.active { background: #66b3ff; color: #fff;}
+#load-more.loading::before { content: "読み込み中...";}
+#generate-trial-keypair { background-color: #ff99cc;}
+#send-new-post { background-color: #ffcc66;}
+#subscribe-relay, #apply-filter, #clear-filter { background-color: #ffd700;}
+#show-settings, #hide-settings { background-color: #999; font-size: 0.7rem; padding: 0.2rem 1rem; margin: 0;}
+.hidden { display: none;}
+@media (max-width: 767px) { .container { max-width: 100%; padding: 8px; margin: 0;} }
+</style>
+</head>
+<body>
+<div id="header-placeholder"></div>
+<div id="modal-placeholder"></div>
+
+<div class="container">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+ <a href="https://github.com/ompomz/flowgazer2/"><h1>flowgazer</h1></a>
+ <button onclick="showAuthUI()" style="color: #00796b; background-color: #e0f2f1; padding: 0.25rem 1rem;">すでに鍵をお持ちの方</button>
+</div>
+
+<p>タイムラインを見たり、投稿したり、ふぁぼったりできるよ。</p>
+
+<button id="generate-trial-keypair" class="full-width" onclick="generateAndLoginWithNewKeypair()">
+  新しい鍵ペアを生成して試す！
+</button>
+
+<div style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;">
+ <span style="white-space: nowrap;">　</span>
+ <a id="npub-link" class="npub-link" target="_blank" style="display: none;"></a>
+ <span id="not-logged-in" style="color: #999;">見るだけモード</span>
+</div>
+
+<textarea id="new-post-content" rows="3" placeholder="いまなにしてる？" class="full-width" style="margin-top:0.5rem;"></textarea>
+<button id="send-new-post" class="full-width">投稿</button>
+
+<div style="display: flex; justify-content: center;">
+  <button id="show-settings">詳細設定を表示</button>
+  <button id="hide-settings" class="hidden">詳細設定を隠す</button>
+</div>
+
+<div id="advanced-settings" class="hidden">
+  <div class="flex-container">
+    <input id="relay-url" type="text">
+    <button id="subscribe-relay">接続</button>
+  </div>
+  
+  <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: 0.25rem;">
+    <label for="auto-update-toggle">自動更新ON</label>
+    <input type="checkbox" id="auto-update-toggle" checked>
+    
+    <label for="filter-flowgazer-only" style="margin-left: 1rem;">via flowgazer しぼりこみ</label>
+    <input type="checkbox" id="filter-flowgazer-only">
+    
+    <label for="kind-7-content-input" style="margin-left: 1rem;">ふぁぼマーク</label>
+    <input id="kind-7-content-input" type="text" maxlength="1" value="⭐" style="width: 2rem; text-align: center;">
+  </div>
+  
+  <div class="flex-container">
+    <textarea id="hex-filter" rows="3" placeholder="投稿者しぼりこみ(npub1…,hex…)"></textarea>
+    <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+      <button id="apply-filter" style="width: 4rem;">適用</button>
+      <button id="clear-filter" style="width: 4rem;">クリア</button>
+      <button id="load-follows" style="width: 4rem;">kind:3</button>
+    </div>
+  </div>
+</div>
+
+<div id="tab-buttons" style="display: flex; gap: 0.5rem; margin: 0.5rem 0;">
+  <button id="tab-global" class="tab-button active">グローバル</button>
+  <button id="tab-following" class="tab-button">フォロー</button>
+  <button id="tab-myposts" class="tab-button">自分</button>
+  <button id="tab-likes" class="tab-button">ふぁぼられ</button>
+</div>
+
+<ul id="timeline"></ul>
+<button id="load-more" class="full-width">もっと見る</button>
+
+</div>
+
+<!-- 既存JS -->
+<script src="https://ompomz.github.io/header/loadHeader.js"></script>
+<script src="https://ompomz.github.io/modal.js"></script>
+<script src="https://ompomz.github.io/flowgazer/tutorial.js"></script>
+<script src="https://ompomz.github.io/flowgazer2/auth.js"></script>
+<script src="https://ompomz.github.io/flowgazer2/auth-ui.js"></script>
+<script src="https://unpkg.com/nostr-tools@2.17.0/lib/nostr.bundle.js"></script>
+
+<!-- 新設計JS -->
+<script src="./relay-manager.js"></script>
+<script src="./data-store.js"></script>
+<script src="./profile-fetcher.js"></script>
+<script src="./timeline.js"></script>
+<script src="./app.js"></script>
+
+<script>
+// DOMContentLoaded
+document.addEventListener('DOMContentLoaded', async () => {
+  // タイムラインインスタンス作成
+  window.timeline = new Timeline(document.getElementById('timeline'));
+  
+  // アプリ初期化
+  await window.app.init();
+  
+  // UI イベントリスナー
+  
+  // 投稿ボタン
+  document.getElementById('send-new-post').addEventListener('click', () => {
+    const content = document.getElementById('new-post-content').value;
+    if (content) {
+      window.app.sendPost(content);
+    }
+  });
+  
+  // Ctrl+Enter で投稿
+  document.getElementById('new-post-content').addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('send-new-post').click();
+    }
+  });
+  
+  // リレー接続ボタン
+  document.getElementById('subscribe-relay').addEventListener('click', () => {
+    const url = document.getElementById('relay-url').value;
+    window.app.connectRelay(url);
+  });
+  
+  // タブボタン
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const tab = e.target.id.replace('tab-', '');
+      window.app.switchTab(tab);
+    });
+  });
+  
+  // フィルター適用
+  document.getElementById('apply-filter').addEventListener('click', () => {
+    const input = document.getElementById('hex-filter').value;
+    const authors = input.split(/[ ,\n]/)
+      .map(s => s.trim())
+      .filter(s => s.length === 64 || s.startsWith('npub'))
+      .map(s => {
+        if (s.startsWith('npub')) {
+          try {
+            const decoded = NostrTools.nip19.decode(s);
+            return decoded.data;
+          } catch (e) {
+            return null;
+          }
+        }
+        return s;
+      })
+      .filter(Boolean);
+    
+    window.app.applyFilter(authors);
+    localStorage.setItem('hexFilterValue', input);
+  });
+  
+  // フィルタークリア
+  document.getElementById('clear-filter').addEventListener('click', () => {
+    document.getElementById('hex-filter').value = '';
+    window.app.applyFilter(null);
+    localStorage.removeItem('hexFilterValue');
+  });
+  
+  // フォローリスト読み込み
+  document.getElementById('load-follows').addEventListener('click', () => {
+    if (!window.nostrAuth.isLoggedIn()) {
+      alert('鍵の入力が必要です');
+      showAuthUI();
+      return;
+    }
+    
+    const pubkeys = Array.from(window.dataStore.followingPubkeys);
+    if (pubkeys.length === 0) {
+      alert('フォローリストが取得できていません');
+      return;
+    }
+    
+    document.getElementById('hex-filter').value = pubkeys.join('\n');
+    alert(`${pubkeys.length}人のフォローを読み込みました`);
+  });
+  
+  // flowgazerしぼりこみ
+  document.getElementById('filter-flowgazer-only').addEventListener('change', (e) => {
+    window.app.toggleFlowgazerFilter(e.target.checked);
+  });
+  
+  // 自動更新トグル
+  document.getElementById('auto-update-toggle').addEventListener('change', (e) => {
+    window.app.isAutoUpdate = e.target.checked;
+  });
+  
+  // もっと見る
+  document.getElementById('load-more').addEventListener('click', function() {
+    this.classList.add('loading');
+    window.app.loadMore();
+  });
+  
+  // 詳細設定トグル
+  document.getElementById('show-settings').addEventListener('click', () => {
+    document.getElementById('advanced-settings').classList.remove('hidden');
+    document.getElementById('show-settings').classList.add('hidden');
+    document.getElementById('hide-settings').classList.remove('hidden');
+  });
+  
+  document.getElementById('hide-settings').addEventListener('click', () => {
+    document.getElementById('advanced-settings').classList.add('hidden');
+    document.getElementById('hide-settings').classList.add('hidden');
+    document.getElementById('show-settings').classList.remove('hidden');
+  });
+  
+  // 保存されたフィルターを復元
+  const savedFilter = localStorage.getItem('hexFilterValue');
+  if (savedFilter) {
+    document.getElementById('hex-filter').value = savedFilter;
+  }
+});
+
+// 新規鍵ペア生成
+function generateAndLoginWithNewKeypair() {
+  const confirmed = confirm(
+    '新しい鍵ペアを生成します。\n\n' +
+    '生成された秘密鍵（nsec）はページをリロードすると消えます。\n' +
+    '必ずコピーして安全に保管してください。'
+  );
+  
+  if (!confirmed) return;
+  
+  const seckey = window.NostrTools.generateSecretKey();
+  const nsec = window.NostrTools.nip19.nsecEncode(seckey);
+  
+  window.nostrAuth.loginWithNsec(nsec);
+  location.reload();
+}
+</script>
+</body>
+</html>
