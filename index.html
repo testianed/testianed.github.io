@@ -32,7 +32,7 @@ li.event {word-break: break-all; padding: 0.5rem; border-top: 1px dashed #ddd;}
 #load-more.loading::before { content: "読み込み中...";}
 #generate-trial-keypair { background-color: #ff99cc;}
 #send-new-post { background-color: #ffcc66;}
-#subscribe-relay, #apply-filter, #clear-filter { background-color: #ffd700;}
+#subscribe-relay, #apply-filter, #clear-filter, #load-follows { background-color: #ffd700;}
 #show-settings, #hide-settings { background-color: #999; font-size: 0.7rem; padding: 0.2rem 1rem; margin: 0;}
 .hidden { display: none;}
 @media (max-width: 767px) { .container { max-width: 100%; padding: 8px; margin: 0;} }
@@ -66,14 +66,13 @@ li.event {word-break: break-all; padding: 0.5rem; border-top: 1px dashed #ddd;}
  <button onclick="showAuthUI()" style="color: #00796b; background-color: #e0f2f1; padding: 0.25rem 1rem;">すでに鍵をお持ちの方</button>
 </div>
 
-<p>新設計版。タイムラインを見たり、投稿したり、ふぁぼったりできるよ。</p>
+<p>新設計版！タイムラインを見たり、投稿したり、ふぁぼったりできるよ。作ったのはclaude。</p>
 
 <button id="generate-trial-keypair" class="full-width" onclick="generateAndLoginWithNewKeypair()">
   新しい鍵ペアを生成して試す！
 </button>
 
 <div style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;">
- <span style="white-space: nowrap;">　</span>
  <a id="npub-link" class="npub-link" target="_blank" style="display: none;"></a>
  <span id="not-logged-in" style="color: #999;">見るだけモード</span>
 </div>
@@ -88,7 +87,12 @@ li.event {word-break: break-all; padding: 0.5rem; border-top: 1px dashed #ddd;}
 
 <div id="advanced-settings" class="hidden">
   <div class="flex-container">
-    <input id="relay-url" type="text">
+    <input id="relay-url" type="text" list="relay-suggestions">
+    <datalist id="relay-suggestions">
+    <option value="wss://relay.damus.io">
+    <option value="wss://nos.lol/">
+    <option value="wss://relay.nostr.band">
+    </datalist>
     <button id="subscribe-relay">接続</button>
   </div>
   
@@ -100,7 +104,7 @@ li.event {word-break: break-all; padding: 0.5rem; border-top: 1px dashed #ddd;}
     <input type="checkbox" id="filter-flowgazer-only">
     
     <label for="kind-7-content-input" style="margin-left: 1rem;">ふぁぼマーク</label>
-    <input id="kind-7-content-input" type="text" maxlength="1" value="⭐" style="width: 2rem; text-align: center;">
+    <input id="kind-7-content-input" type="text" maxlength="1" value="⭐" style="width: 2rem; text-align: center; font-size: 0.8rem;">
   </div>
   
   <div class="flex-container">
@@ -114,14 +118,14 @@ li.event {word-break: break-all; padding: 0.5rem; border-top: 1px dashed #ddd;}
 </div>
 
 <div id="tab-buttons" style="display: flex; gap: 0.5rem; margin: 0.5rem 0;">
-  <button id="tab-global" class="tab-button active">グローバル</button>
+  <button id="tab-global" class="tab-button active">みんな</button>
   <button id="tab-following" class="tab-button">フォロー</button>
   <button id="tab-myposts" class="tab-button">自分</button>
   <button id="tab-likes" class="tab-button">ふぁぼられ</button>
 </div>
 
 <ul id="timeline"></ul>
-<button id="load-more" class="full-width">もっと見る</button>
+<button id="load-more" class="full-width" style="margin: 0.1rem 0;">もっと見る</button>
 
 </div>
 
