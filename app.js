@@ -182,7 +182,7 @@ class FlowgazerApp {
     window.relayManager.subscribe('received-likes', {
       kinds: [7],
       '#p': [myPubkey],
-      limit: 100
+      limit: 50
     }, (type, event) => {
       if (type === 'EVENT') {
         window.dataStore.addEvent(event);
@@ -294,7 +294,6 @@ class FlowgazerApp {
       window.dataStore.addEvent(signed);
       window.timeline.refresh();
 
-      alert('投稿しました！');
       document.getElementById('new-post-content').value = '';
 
     } catch (err) {
