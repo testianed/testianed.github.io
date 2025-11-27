@@ -36,15 +36,16 @@ function createAuthUI() {
     // パネルのinnerHTML（コンテンツ）設定
 panel.innerHTML = `
   <h3 style="margin-bottom: 1rem;">Do you have key?</h3>
-  <div id="auth-status"></div>
-  
-  <div id="auth-login" style="display: none;">    
+  <div id="auth-status"></div>  
+  <div id="auth-login" style="display: none;">
+      <button id="nip07-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; background-color: #e0f2f1; color: #00796b; cursor: pointer;">
+      🔐 NIP-07（ツイート&ふぁぼ可）
+    </button>
     <input type="password" id="nsec-input" placeholder="nsec1..."  
       style="margin: 0.5rem 0; width: 100%; transition: background-color 0.3s, color 0.3s; cursor: pointer; font-size: 0.9rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; color: #666; background-color: #fff;">
     <button id="nsec-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; background-color: #e0f2f1; color: #00796b; cursor: pointer;">
       🔑 nsec（ツイート&ふぁぼ可）
-    </button>    
-    <hr style="margin: 1rem 0; border: none; border-top: 1px solid #ddd;">
+    </button>
     <input type="text" id="npub-input" placeholder="npub1... or name@domain.com"  
       style="margin: 0.5rem 0; width: 100%; transition: background-color 0.3s, color 0.3s; cursor: pointer; font-size: 0.9rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; color: #666; background-color: #fff;">
     <button id="npub-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; background-color: #e0f2f1; color: #00796b; cursor: pointer;">
@@ -53,18 +54,12 @@ panel.innerHTML = `
     <small style="color: #999; display: block; margin-top: 0.25rem;">
       ※イベントを流す以外のことができます
     </small>
-    <button id="nip07-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; background-color: #e0f2f1; color: #00796b; cursor: pointer;">
-      🔐 NIP-07（ツイート&ふぁぼ可）
-    </button>
   </div>
-  
   <div id="auth-info" style="display: none;">
-    <p>公開鍵: <span id="auth-npub"></span></p>
-    <p id="auth-mode" style="color: #999; font-size: 0.8rem;"></p>
-    <button id="logout-btn" class="container-button" style="background-color: #e0f2f1; color: #00796b; border-radius: 999px; padding: 0.25rem 1rem;">サインアウト</button>
+    <p><span id="auth-mode" style="color: #999; font-size: 0.8rem;"></span><span>　公開鍵: <span id="auth-npub"></span></span></p>
+    <button id="logout-btn" class="container-button" style="background-color: #e0f2f1; color: #00796b; border-radius: 999px; padding: 0.25rem 1rem; border: none;">サインアウト</button>
   </div>
-  
-  <button id="close-auth" class="container-button" style="margin-top: 1rem; background-color: #00796b; color: #e0f2f1; border-radius: 999px; padding: 0.25rem 1rem;">とじる </button>
+  <button id="close-auth" class="container-button" style="margin-top: 1rem; background-color: #00796b; color: #e0f2f1; border-radius: 999px; padding: 0.25rem 1rem; border: none;">とじる </button>
 `;
 
     // DOMに追加
@@ -121,6 +116,7 @@ if (window.nostrAuth.nsec && !window.nostrAuth.useNIP07 && !existingNsecBtn) {
     nsecBtn.style.margin = '1rem 0';
     nsecBtn.style.borderRadius = '999px';
     nsecBtn.style.padding = '0.25rem 1rem';
+    nsecBtn.style.border = 'none';
     nsecBtn.onclick = () => {
         navigator.clipboard.writeText(window.nostrAuth.nsec)
             .then(() => alert('秘密鍵をコピーしました！安全な場所に保存してください。'))
