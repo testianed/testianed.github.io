@@ -41,31 +41,29 @@ panel.innerHTML = `
   <div id="auth-login" style="display: none;">    
     <input type="password" id="nsec-input" placeholder="nsec1..."  
       style="margin: 0.5rem 0; width: 100%; transition: background-color 0.3s, color 0.3s; cursor: pointer; font-size: 0.9rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; color: #666; background-color: #fff;">
-    <button id="nsec-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; background-color: #00796b; color: #e0f2f1; cursor: pointer;">
+    <button id="nsec-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; background-color: #e0f2f1; color: #00796b; cursor: pointer;">
       🔑 nsec（ツイート&ふぁぼ可）
     </button>    
     <hr style="margin: 1rem 0; border: none; border-top: 1px solid #ddd;">
     <input type="text" id="npub-input" placeholder="npub1... or name@domain.com"  
       style="margin: 0.5rem 0; width: 100%; transition: background-color 0.3s, color 0.3s; cursor: pointer; font-size: 0.9rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; color: #666; background-color: #fff;">
-    <button id="npub-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; background-color: #00796b; color: #e0f2f1; cursor: pointer;">
+    <button id="npub-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; background-color: #e0f2f1; color: #00796b; cursor: pointer;">
       👀 npub（フォローリスト取得可）
     </button>
     <small style="color: #999; display: block; margin-top: 0.25rem;">
       ※イベントを流す以外のことができます
     </small>
-    <button id="nip07-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; background-color: #00796b; color: #e0f2f1; cursor: pointer;">
+    <button id="nip07-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; background-color: #e0f2f1; color: #00796b; cursor: pointer;">
       🔐 NIP-07（ツイート&ふぁぼ可）
     </button>
   </div>
-  
   <div id="auth-info" style="display: none;">
     <p>公開鍵: <span id="auth-npub"></span></p>
     <p id="auth-mode" style="color: #999; font-size: 0.8rem;"></p>
-    <button id="logout-btn" class="container-button" style="background-color: #00796b; color: #e0f2f1;">サインアウト</button>
+    <button id="logout-btn" class="container-button" style="background-color: #e0f2f1; color: #00796b; border-radius: 999px; padding: 0.25rem 1rem;">サインアウト</button>
   </div>
-  
-  <button id="close-auth" class="container-button" style="margin-top: 1rem; background-color: #00796b; color: #e0f2f1;">とじる</button>
-`;
+  <button id="close-auth" class="container-button" style="margin-top: 1rem; background-color: #00796b; color: #e0f2f1; border-radius: 999px; padding: 0.25rem 1rem;">とじる</button>
+  `;  
 
     // DOMに追加
     overlay.appendChild(panel);
@@ -81,13 +79,13 @@ panel.innerHTML = `
 // ---
 
 /**
- * ログイン状態に基づいて認証UIの表示を更新する関数
+ * 鍵の入力状況に基づいて認証UIの表示を更新する関数
  */
 function updateAuthUI() {
   const loginDiv = document.getElementById('auth-login');
   const infoDiv = document.getElementById('auth-info');
   const npubSpan = document.getElementById('auth-npub');
-  const modeSpan = document.getElementById('auth-mode'); // ← 追加
+  const modeSpan = document.getElementById('auth-mode');
 
   if (window.nostrAuth.isLoggedIn()) {
     loginDiv.style.display = 'none';
@@ -95,7 +93,7 @@ function updateAuthUI() {
     const npub = NostrTools.nip19.npubEncode(window.nostrAuth.pubkey);
     npubSpan.textContent = npub.substring(0, 12) + '...' + npub.slice(-4);
     
-    // ログインモードを表示
+    // モードを表示
     if (modeSpan) {
       if (window.nostrAuth.readOnly) {
         modeSpan.textContent = 'ROM';
@@ -119,6 +117,8 @@ if (window.nostrAuth.nsec && !window.nostrAuth.useNIP07 && !existingNsecBtn) {
     nsecBtn.style.backgroundColor = '#00796b';
     nsecBtn.style.color = '#e0f2f1';
     nsecBtn.style.margin = '1rem 0';
+    nsecBtn.style.borderRadius = '999px';
+    nsecBtn.style.padding = '0.25rem 1rem';
     nsecBtn.onclick = () => {
         navigator.clipboard.writeText(window.nostrAuth.nsec)
             .then(() => alert('秘密鍵をコピーしました！安全な場所に保存してください。'))
@@ -144,7 +144,7 @@ if (window.nostrAuth.nsec && !window.nostrAuth.useNIP07 && !existingNsecBtn) {
  * 認証に関する各種イベントリスナーを設定する関数
  */
 function setupAuthEvents() {
-    // NIP-07 ログイン
+    // NIP-07ボタン
     document.getElementById('nip07-login').addEventListener('click', async () => {
         try {
             await window.nostrAuth.loginWithExtension();
@@ -156,7 +156,7 @@ function setupAuthEvents() {
         }
     });
 
-    // nsec ログイン
+    // nsec入力ボタン
     document.getElementById('nsec-login').addEventListener('click', () => {
         const nsec = document.getElementById('nsec-input').value;
         try {
@@ -169,7 +169,7 @@ function setupAuthEvents() {
         }
     });
     
-      // npubログインボタン
+      // npub入力ボタン
   document.getElementById('npub-login').addEventListener('click', () => {
     const npub = document.getElementById('npub-input').value.trim();
     if (!npub) {
@@ -186,7 +186,7 @@ function setupAuthEvents() {
     }
   });
 
-    // ログアウト
+    // サインアウト
     document.getElementById('logout-btn').addEventListener('click', () => {
         window.nostrAuth.logout();
         updateAuthUI();

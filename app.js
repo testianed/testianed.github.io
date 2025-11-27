@@ -9,20 +9,22 @@ class FlowgazerApp {
     this.isAutoUpdate = true;
     this.filterAuthors = null;
     this.flowgazerOnly = false;
+    this.myPostsHistoryFetched = false;
+    this.receivedLikesFetched = false;
   }
 
   /**
    * 初期化
    */
   async init() {
-    console.log('🚀 Flowgazer起動中...');
+    console.log('🚀 flowgazer起動中...');
 
-    // ログイン状態を反映
+    // 鍵入力状況を反映
     this.updateLoginUI();
 
     // デフォルトリレーに接続
     const savedRelay = localStorage.getItem('relayUrl');
-    const defaultRelay = 'wss://nos.lol/';
+    const defaultRelay = 'wss://r.ompomz.io/';
     const relay = savedRelay || defaultRelay;
 
     await this.connectRelay(relay);
@@ -30,12 +32,12 @@ class FlowgazerApp {
     // 禁止ワードリストを取得
     await this.fetchForbiddenWords();
 
-    // ログイン済みなら初期データ取得
+    // 鍵入力済みなら初期データ取得
     if (window.nostrAuth.isLoggedIn()) {
       this.fetchInitialData();
     }
 
-    console.log('✅ Flowgazer起動完了');
+    console.log('✅ flowgazer起動完了');
   }
 
   /**
@@ -63,6 +65,7 @@ class FlowgazerApp {
    */
   subscribeMainTimeline() {
     const filters = [];
+    const myPubkey = window.nostrAuth?.pubkey;
 
     // グローバルタイムライン
     if (this.currentTab === 'global') {
@@ -83,15 +86,8 @@ class FlowgazerApp {
     }
 
     // マイポストタイムライン
-    if (this.currentTab === 'myposts' && window.nostrAuth.isLoggedIn()) {
-      const myPubkey = window.nostrAuth.pubkey;
-      filters.push({
-        kinds: [1],
-        authors: [myPubkey],
-        limit: 100
-      });
-
-      // リアクションも取得
+    if (this.currentTab === 'myposts' && myPubkey) {
+      // リアクション取得のみ（投稿は履歴で取得済み）
       if (window.dataStore.myPostIds.size > 0) {
         filters.push({
           kinds: [6, 7],
@@ -101,9 +97,11 @@ class FlowgazerApp {
     }
 
     // 購読
-    window.relayManager.subscribe('main-timeline', filters, (type, event) => {
-      this.handleTimelineEvent(type, event);
-    });
+    if (filters.length > 0) {
+      window.relayManager.subscribe('main-timeline', filters, (type, event) => {
+        this.handleTimelineEvent(type, event);
+      });
+    }
   }
 
   /**
@@ -145,7 +143,7 @@ class FlowgazerApp {
   }
 
   /**
-   * 初期データ取得（ログイン済みユーザー向け）
+   * 初期データ取得（鍵入力済みユーザー向け）
    */
   fetchInitialData() {
     const myPubkey = window.nostrAuth.pubkey;
@@ -167,30 +165,7 @@ class FlowgazerApp {
       }
     });
 
-    // 2. 自分の投稿履歴
-    window.relayManager.subscribe('my-posts', {
-      kinds: [1],
-      authors: [myPubkey],
-      limit: 100
-    }, (type, event) => {
-      if (type === 'EVENT') {
-        window.dataStore.addEvent(event);
-      }
-    });
-
-    // 3. 受け取ったふぁぼ
-    window.relayManager.subscribe('received-likes', {
-      kinds: [7],
-      '#p': [myPubkey],
-      limit: 50
-    }, (type, event) => {
-      if (type === 'EVENT') {
-        window.dataStore.addEvent(event);
-        window.profileFetcher.request(event.pubkey);
-      }
-    });
-
-    // 4. 自分がふぁぼした履歴
+    // 2. 自分のふぁぼり履歴（これだけはグローバルに影響しないので先に取得）
     window.relayManager.subscribe('my-likes', {
       kinds: [7],
       authors: [myPubkey]
@@ -199,6 +174,55 @@ class FlowgazerApp {
         window.dataStore.addEvent(event);
       }
     });
+
+    // 注: 自分の投稿履歴と受け取ったふぁぼは、
+    // 該当タブを開いた時に取得する
+  }
+
+  /**
+   * 自分の投稿履歴を取得（「自分」タブ用）
+   */
+  fetchMyPostsHistory() {
+    if (this.myPostsHistoryFetched) return;
+    
+    const myPubkey = window.nostrAuth.pubkey;
+    
+    // 自分の投稿履歴
+    window.relayManager.subscribe('my-posts-history', {
+      kinds: [1],
+      authors: [myPubkey],
+      limit: 100
+    }, (type, event) => {
+      if (type === 'EVENT') {
+        window.dataStore.addEvent(event);
+        window.timeline.refresh();
+      }
+    });
+
+    this.myPostsHistoryFetched = true;
+  }
+
+  /**
+   * 受け取ったふぁぼを取得（「ふぁぼられ」タブ用）
+   */
+  fetchReceivedLikes() {
+    if (this.receivedLikesFetched) return;
+    
+    const myPubkey = window.nostrAuth.pubkey;
+    
+    window.relayManager.subscribe('received-likes', {
+      kinds: [7],
+      '#p': [myPubkey],
+      limit: 100
+    }, (type, event) => {
+      if (type === 'EVENT') {
+        window.dataStore.addEvent(event);
+        window.profileFetcher.request(event.pubkey);
+        window.timeline.refresh();
+      }
+    });
+
+    this.receivedLikesFetched = true;
   }
 
   /**
@@ -212,6 +236,13 @@ class FlowgazerApp {
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.classList.toggle('active', btn.id === `tab-${tab}`);
     });
+
+    // タブ専用データの取得
+    if (tab === 'myposts' && window.nostrAuth.isLoggedIn()) {
+      this.fetchMyPostsHistory();
+    } else if (tab === 'likes' && window.nostrAuth.isLoggedIn()) {
+      this.fetchReceivedLikes();
+    }
 
     // 購読を更新
     window.relayManager.unsubscribe('main-timeline');
@@ -245,15 +276,24 @@ class FlowgazerApp {
    * もっと見る
    */
   loadMore() {
+    const oldestTimestamp = window.dataStore.getOldestTimestamp(this.currentTab);
+    
     const filter = {
       kinds: [1, 6],
-      until: window.dataStore.oldestTimestamp - 1,
+      until: oldestTimestamp - 1,
       limit: 50
     };
 
+    // フィルターや著者の設定
     if (this.filterAuthors && this.filterAuthors.length > 0) {
       filter.authors = this.filterAuthors;
+    } else if (this.currentTab === 'following' && window.dataStore.followingPubkeys.size > 0) {
+      filter.authors = Array.from(window.dataStore.followingPubkeys);
+    } else if (this.currentTab === 'myposts' && window.nostrAuth.isLoggedIn()) {
+      filter.authors = [window.nostrAuth.pubkey];
     }
+
+    console.log(`📥 もっと見る: ${this.currentTab}タブ, until=${new Date(oldestTimestamp * 1000).toLocaleString()}`);
 
     window.relayManager.subscribe('load-more', filter, (type, event) => {
       if (type === 'EVENT') {
@@ -263,6 +303,7 @@ class FlowgazerApp {
       } else if (type === 'EOSE') {
         window.relayManager.unsubscribe('load-more');
         document.getElementById('load-more').classList.remove('loading');
+        console.log(`✅ もっと見る完了`);
       }
     });
   }
@@ -294,6 +335,7 @@ class FlowgazerApp {
       window.dataStore.addEvent(signed);
       window.timeline.refresh();
 
+      alert('投稿しました！');
       document.getElementById('new-post-content').value = '';
 
     } catch (err) {
@@ -335,7 +377,7 @@ class FlowgazerApp {
       alert('ふぁぼった！');
 
     } catch (err) {
-      console.error('ふぁぼ失敗:', err);
+      console.error('失敗:', err);
       alert('ふぁぼれませんでした: ' + err.message);
     }
   }
@@ -358,7 +400,7 @@ class FlowgazerApp {
   }
 
   /**
-   * ログインUI更新
+   * 鍵入力後のUI更新
    */
   updateLoginUI() {
     const notLoggedInSpan = document.getElementById('not-logged-in');
@@ -379,7 +421,7 @@ class FlowgazerApp {
 
 // グローバルインスタンス
 window.app = new FlowgazerApp();
-console.log('✅ FlowgazerApp初期化完了');
+console.log('✅ flowgazerApp初期化完了');
 
 // グローバル関数（UI用）
 window.sendLikeEvent = (eventId, pubkey) => window.app.sendLike(eventId, pubkey);
