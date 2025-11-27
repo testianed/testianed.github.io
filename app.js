@@ -22,7 +22,7 @@ class FlowgazerApp {
 
     // デフォルトリレーに接続
     const savedRelay = localStorage.getItem('relayUrl');
-    const defaultRelay = 'wss://nos.lol/';
+    const defaultRelay = 'wss://r.kojira.io';
     const relay = savedRelay || defaultRelay;
 
     await this.connectRelay(relay);
@@ -293,6 +293,8 @@ class FlowgazerApp {
       // 即座にタイムラインに追加
       window.dataStore.addEvent(signed);
       window.timeline.refresh();
+
+      alert('投稿しました！');
       document.getElementById('new-post-content').value = '';
 
     } catch (err) {
@@ -378,6 +380,7 @@ class FlowgazerApp {
 
 // グローバルインスタンス
 window.app = new FlowgazerApp();
+console.log('✅ FlowgazerApp初期化完了');
 
 // グローバル関数（UI用）
 window.sendLikeEvent = (eventId, pubkey) => window.app.sendLike(eventId, pubkey);
