@@ -30,6 +30,8 @@ function createAuthUI() {
         color: #666;
         font-size: .9rem;
         line-height: 1.3;
+        font-weight:nomal;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     `;
 
     // パネルのinnerHTML（コンテンツ）設定
@@ -40,20 +42,20 @@ panel.innerHTML = `
   <!-- ログインしていない時の表示 -->
   <div id="auth-login" style="display: none;">    
     <input type="password" id="nsec-input" placeholder="nsec1..." 
-      style="margin: 0.5rem 0; width: 100%;">
-    <button id="nsec-login" class="container-button" style="margin-bottom: 0.5rem;">
+     style="margin: 0.5rem 0; width: 100%; transition: background-color 0.3s, color 0.3s; cursor: pointer; font-size: 0.9rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; color: #666; background-color: #fff;">
+    <button id="nsec-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; color: #fff; background-color: #666; cursor: pointer;">
       🔑 nsec（ツイート&ふぁぼ可）
     </button>    
     <hr style="margin: 1rem 0; border: none; border-top: 1px solid #ddd;">
     <input type="text" id="npub-input" placeholder="npub1... or name@domain.com" 
-    style="margin: 0.5rem 0; width: 100%;">
-    <button id="npub-login" class="container-button">
+     style="margin: 0.5rem 0; width: 100%; transition: background-color 0.3s, color 0.3s; cursor: pointer; font-size: 0.9rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; color: #666; background-color: #fff;">
+    <button id="npub-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; color: #fff; background-color: #666; cursor: pointer;">
       👀 npub（フォローリスト取得可）
     </button>
     <small style="color: #999; display: block; margin-top: 0.25rem;">
       ※イベントを流す以外のことができます
     </small>
-    <button id="nip07-login" class="container-button" style="margin-bottom: 0.5rem;">
+    <button id="nip07-login" class="container-button" style="margin-bottom: 0.5rem; white-space: nowrap; font-size: 0.8rem; font-weight: bold; padding: 0.25rem 1rem; margin: 0.5rem 0; border: none; border-radius: 999px; color: #fff; background-color: #666; cursor: pointer;">
       🔐 NIP-07（ツイート&ふぁぼ可）
     </button>
   </div>
