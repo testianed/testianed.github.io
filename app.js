@@ -345,7 +345,7 @@ class FlowgazerApp {
   }
 
   /**
-   * ふぁぼする
+   * ふぁぼる
    */
   async sendLike(targetEventId, targetPubkey) {
     if (!window.nostrAuth.canWrite()) {
