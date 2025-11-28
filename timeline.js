@@ -33,18 +33,19 @@ class Timeline {
    * タイムラインを再描画
    */
   refresh() {
+    // 自動更新がOFFなら何もしない
+    if (!window.app?.isAutoUpdate) {
+      console.log('⏸️ 自動更新OFF: 描画スキップ');
+      return;
+    }
+
     // コンテナをクリア
     while (this.container.firstChild) {
       this.container.removeChild(this.container.firstChild);
     }
 
-    // データを取得
-    let events = window.dataStore.getEventsByTab(this.currentTab, this.filterOptions);
-
-    // 投稿者フィルター
-    if (this.filterOptions.authors && this.filterOptions.authors.length > 0) {
-      events = window.dataStore.filterByAuthors(events, this.filterOptions.authors);
-    }
+    // ViewStateから表示対象を取得
+    const events = window.viewState.getVisibleEvents(this.currentTab, this.filterOptions);
 
     // 描画
     events.forEach(event => {

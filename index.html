@@ -134,12 +134,13 @@ li.event {word-break: break-all; padding: 0.5rem; border-top: 1px dashed #ddd;}
 <script src="https://ompomz.github.io/modal.js"></script>
 <script src="https://ompomz.github.io/flowgazer/tutorial.js"></script>
 <script src="https://ompomz.github.io/flowgazer2/auth.js"></script>
-<script src="./auth-ui.js"></script>
+<script src="https://ompomz.github.io/flowgazer2/auth-ui.js"></script>
 <script src="https://unpkg.com/nostr-tools@2.17.0/lib/nostr.bundle.js"></script>
 
 <!-- 新設計JS -->
 <script src="./relay-manager.js"></script>
 <script src="./data-store.js"></script>
+<script src="./view-state.js"></script>
 <script src="./profile-fetcher.js"></script>
 <script src="./timeline.js"></script>
 <script src="./app.js"></script>
@@ -149,6 +150,7 @@ li.event {word-break: break-all; padding: 0.5rem; border-top: 1px dashed #ddd;}
 console.log('✅ スクリプト読み込み完了');
 console.log('dataStore:', typeof window.dataStore);
 console.log('relayManager:', typeof window.relayManager);
+console.log('viewState:', typeof window.viewState);
 console.log('profileFetcher:', typeof window.profileFetcher);
 console.log('Timeline:', typeof window.Timeline);
 console.log('app:', typeof window.app);
@@ -156,8 +158,8 @@ console.log('app:', typeof window.app);
 // DOMContentLoaded
 document.addEventListener('DOMContentLoaded', async () => {
   // インスタンスの存在確認
-  if (!window.dataStore) {
-    console.error('❌ dataStoreが初期化されていません');
+  if (!window.dataStore || !window.viewState) {
+    console.error('❌ 初期化エラー');
     alert('初期化エラー: ページを再読み込みしてください');
     return;
   }
@@ -256,6 +258,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 自動更新トグル
   document.getElementById('auto-update-toggle').addEventListener('change', (e) => {
     window.app.isAutoUpdate = e.target.checked;
+    console.log(`🔄 自動更新: ${e.target.checked ? 'ON' : 'OFF'}`);
+    
+    // OFFからONにした時は即座に描画
+    if (e.target.checked) {
+      window.viewState.renderNow();
+    }
   });
   
   // もっと見る
@@ -287,9 +295,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 新規鍵ペア生成
 function generateAndLoginWithNewKeypair() {
   const confirmed = confirm(
-    '新しい鍵ペアを生成します。\n\n' +
-    '生成された秘密鍵（nsec）はページをリロードすると消えます。\n' +
-    '必ずコピーして安全に保管してください。'
+    '新しい鍵ペアを生成します。\n' +
+    '生成された秘密鍵（nsec）は失くすと見つからないので\n' +
+    '大事に持っておいてね。'
   );
   
   if (!confirmed) return;

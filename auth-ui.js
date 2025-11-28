@@ -76,7 +76,7 @@ panel.innerHTML = `
 // ---
 
 /**
- * ログイン状態に基づいて認証UIの表示を更新する関数
+ * 鍵入力状況に基づいて認証UIの表示を更新する関数
  */
 function updateAuthUI() {
   const loginDiv = document.getElementById('auth-login');
@@ -90,7 +90,7 @@ function updateAuthUI() {
     const npub = NostrTools.nip19.npubEncode(window.nostrAuth.pubkey);
     npubSpan.textContent = npub.substring(0, 12) + '...' + npub.slice(-4);
     
-    // ログインモードを表示
+    // 鍵入力モードを表示
     if (modeSpan) {
       if (window.nostrAuth.readOnly) {
         modeSpan.textContent = 'ROM';
@@ -142,7 +142,7 @@ if (window.nostrAuth.nsec && !window.nostrAuth.useNIP07 && !existingNsecBtn) {
  * 認証に関する各種イベントリスナーを設定する関数
  */
 function setupAuthEvents() {
-    // NIP-07 ログイン
+    // NIP-07
     document.getElementById('nip07-login').addEventListener('click', async () => {
         try {
             await window.nostrAuth.loginWithExtension();
@@ -154,7 +154,7 @@ function setupAuthEvents() {
         }
     });
 
-    // nsec ログイン
+    // nsec入力
     document.getElementById('nsec-login').addEventListener('click', () => {
         const nsec = document.getElementById('nsec-input').value;
         try {
@@ -167,7 +167,7 @@ function setupAuthEvents() {
         }
     });
     
-      // npubログインボタン
+      // npub入力
   document.getElementById('npub-login').addEventListener('click', () => {
     const npub = document.getElementById('npub-input').value.trim();
     if (!npub) {
@@ -184,7 +184,7 @@ function setupAuthEvents() {
     }
   });
 
-    // ログアウト
+    // サインアウト
     document.getElementById('logout-btn').addEventListener('click', () => {
         window.nostrAuth.logout();
         updateAuthUI();
